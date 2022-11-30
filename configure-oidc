@@ -1,0 +1,26 @@
+# IF kubeconfig is weird (wsl on windows, or set specifically use it)
+echo "KUBECONFIG is $KUBECONFIG"
+if [ -n "$KUBECONFIG" ]
+then
+    ROOT=$(dirname "$KUBECONFIG")
+else 
+    echo "Missing KUBECONFIG using ~/.kube"
+    ROOT=~/.kube
+fi   
+
+# be sure to be logged in locally to use creds ... 
+oc config use-context appstudio
+oc get cm 
+KUBE_CONFIG=$(cat $ROOT/config | base64) 
+
+pushd $(pwd) 
+cd $ROOT/cache 
+tar cfv oidc.tar ./oidc-login/*
+OIDC=$(cat oidc.tar | base64)  
+rm oidc.tar
+popd
+
+gh secret set KUBE_CONFIG -b "$KUBE_CONFIG"
+gh secret set OIDC -b "$OIDC"
+gh secret set MY_GITHUB_TOKEN -b "$MY_GITHUB_TOKEN"
+ 
